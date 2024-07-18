@@ -1,0 +1,81 @@
+import streamlit as st
+import pickle
+import pandas as pd
+import requests
+
+
+# fetching movie poster for given id from 'tmdb' database
+def fetch(movie_id):
+    response = requests.get(
+        f'https://api.themoviedb.org/3/movie/{movie_id}?api_key=3a9f9787bd0db7e74166a32dcfa17917&language=en-US'
+    )
+    data = response.json()
+    return "https://image.tmdb.org/t/p/w500" + data['poster_path']
+
+
+# function for recommending movies
+def recommend(movie):
+    movie_index = movies[movies['title'] == movie].index[0]
+    distance = similarity[movie_index]
+    movie_list = sorted(list(enumerate(distance)), reverse=True, key=lambda x: x[1])[1:6]
+
+    recommended_movies = []
+    recommended_movies_posters = []
+
+    for i in movie_list:
+        movie_id = movies.iloc[i[0]].id
+        recommended_movies.append(movies.iloc[i[0]].title)
+        recommended_movies_posters.append(fetch(movie_id))
+
+    return recommended_movies, recommended_movies_posters
+
+
+# Load movies and similarity data
+movies = pickle.load(open('movies.pkl', 'rb'))
+similarity = pickle.load(open('similarity.pkl', 'rb'))
+
+# Streamlit app
+st.title('Movie Recommendation System')
+
+selected_movie_name = st.selectbox(
+    'Choose a movie',
+    movies['title'].values
+)
+
+if st.button('Recommend'):
+    names, posters = recommend(selected_movie_name)
+    st.write(f"Recommendations for {selected_movie_name}:")
+
+    # Adding custom CSS
+    st.markdown("""
+        <style>
+        .stImage {
+            margin: 20px;
+        }
+        .stMarkdown {
+            font-size: 10px;
+            text-align: center;
+        }
+        .stColumn > div {
+            padding: 20px;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
+    # Using larger columns
+    col1, col2, col3, col4, col5 = st.columns([1, 1, 1, 1, 1], gap="small")
+    with col1:
+        st.markdown(f"<div class='stMarkdown'>{names[0]}</div>", unsafe_allow_html=True)
+        st.image(posters[0], use_column_width='always')
+    with col2:
+        st.markdown(f"<div class='stMarkdown'>{names[1]}</div>", unsafe_allow_html=True)
+        st.image(posters[1], use_column_width='always')
+    with col3:
+        st.markdown(f"<div class='stMarkdown'>{names[2]}</div>", unsafe_allow_html=True)
+        st.image(posters[2], use_column_width='always')
+    with col4:
+        st.markdown(f"<div class='stMarkdown'>{names[3]}</div>", unsafe_allow_html=True)
+        st.image(posters[3], use_column_width='always')
+    with col5:
+        st.markdown(f"<div class='stMarkdown'>{names[4]}</div>", unsafe_allow_html=True)
+        st.image(posters[4], use_column_width='always')
